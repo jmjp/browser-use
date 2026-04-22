@@ -1,0 +1,16 @@
+context: Atualização do spec.yaml com novas funcionalidades de Personas, Monitoramento de Contexto, melhorias de DX e transparência de processamento.
+files_to_read:
+  - brain/spec.yaml
+artifacts_to_produce:
+  - brain/spec.yaml
+steps:
+  - Analisar o spec.yaml atual.
+  - Integrar Personas/Habilidades Especializadas no escopo, entidades e fluxo.
+  - Adicionar Monitoramento de Contexto (Tokens) no escopo e arquitetura.
+  - Incluir melhorias de DX (botão copiar, auto-scroll) nas diretrizes de design e arquitetura.
+  - Refinar a Transparência de Processamento (Pensando vs Agindo) nos user stories e design.
+  - Atualizar o arquivo brain/spec.yaml.
+anti_hallucination_checklist:
+  - Não inventar requisitos fora dos 4 pontos solicitados.
+  - Manter a consistência com o stack SvelteKit/Svelte 5 definido.
+  - Garantir que as novas funcionalidades estejam refletidas em todas as seções relevantes (scope, stories, entities, design).

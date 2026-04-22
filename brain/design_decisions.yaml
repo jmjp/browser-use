@@ -1,0 +1,28 @@
+version: "1.0"
+project: "Ultra Browser"
+
+decisions:
+  - id: "DSN-001"
+    topic: "Model Selector Placement"
+    decision: "Place the model selector inside the input container, at the top-right corner or just above the text area."
+    rationale: "Keeps the focus on the current context and makes it clear which model will process the input."
+
+  - id: "DSN-002"
+    topic: "Addition Menu Interaction"
+    decision: "Use a popover instead of a simple dropdown to allow for richer content like toggles and descriptions."
+    rationale: "The '+' menu is the hub for advanced features; a popover allows for a more modern, app-like feel compared to standard OS menus."
+
+  - id: "DSN-003"
+    topic: "Attachment Preview Limit"
+    decision: "Horizontal row with a hard limit of 10 items shown as thumbnails/icons."
+    rationale: "Consistent with the project specification and ensures the UI doesn't become cluttered by excessive file lists."
+
+  - id: "DSN-004"
+    topic: "Flat Mode Visual Language"
+    decision: "Use a soft blue badge/indicator. When active, change the 'Send' button style slightly."
+    rationale: "Blue is already associated with 'Thinking' and 'Planning' in the current system. Changing the send button provides an extra affordance for the different execution flow."
+
+  - id: "DSN-005"
+    topic: "Minimalist Icons"
+    decision: "Use monochrome/grayscale icons for models that only gain color when active or hovered."
+    rationale: "Reduces visual noise in the 'idle' state, aligning with the Claude-inspired minimalist aesthetic."

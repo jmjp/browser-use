@@ -1,0 +1,39 @@
+context: |
+  Finalizing "Ultra Browser" extension build and packaging.
+  Need to coordinate background scripts, update package.json, and create a zip script.
+
+minimal_files_to_read:
+  - package.json
+  - svelte.config.js
+  - vite.config.ts
+  - static/manifest.json
+  - static/background.js
+  - src/background/agent.ts
+
+artifacts_to_produce:
+  - scripts/bundle.ts
+  - Updated package.json
+  - Updated src/background/agent.ts (integrating background.js logic)
+
+steps:
+  - id: 1
+    description: Merge static/background.js logic into src/background/agent.ts
+    status: todo
+  - id: 2
+    description: Create a separate Vite configuration for the background script
+    status: todo
+  - id: 3
+    description: Create scripts/bundle.ts for packaging (zipping) the extension
+    status: todo
+  - id: 4
+    description: Update package.json with build:extension and zip scripts
+    status: todo
+  - id: 5
+    description: Run build and verify output structure
+    status: todo
+
+anti_hallucination_checklist:
+  - Ensure paths in manifest.json match the built structure
+  - Check that chrome.* APIs are correctly typed/used
+  - Verify that adapter-static output and background script end up in the same directory (build/)
+  - Ensure pnpm is used for any new dependencies if needed (though I should stick to existing ones)

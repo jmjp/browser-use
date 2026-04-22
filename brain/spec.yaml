@@ -1,0 +1,138 @@
+version: "1.0"
+approved: false
+updated_at: "2024-05-23T18:30:00Z"
+product:
+  name: "Ultra Browser V3"
+  summary: "Uma extensão de navegador baseada em IA que atua como um agente autônomo, reconstruída com SvelteKit (SSG) e design minimalista inspirado no Claude Browser."
+  in_scope:
+    - Interface de Chat/Planner reconstruída em Svelte 5 (SvelteKit SSG).
+    - Sistema de streaming de 'pensamentos' (reasoning) e ações em tempo real.
+    - Transparência de Processamento: Feedback visual claro entre "Pensando" (raciocínio) vs "Agindo" (uso de ferramentas).
+    - Seleção de Personas/Habilidades Especializadas: Escolha de prompts de sistema (ex: Desenvolvedor, Escritor, Analista).
+    - Monitoramento de Contexto: Indicador de uso de tokens (estimativa) na UI.
+    - Design minimalista e profissional (estilo Claude).
+    - Botão de interrupção (Stop) na UI de chat para cancelamento imediato do agente.
+    - Seletor de modelos (Gemini, Anthropic, OpenAI) integrado diretamente à interface de input.
+    - Menu de Adição (+) no input com suporte a "Modo Plano" e upload de arquivos.
+    - Suporte para upload de até 10 arquivos (texto, imagem, PDF, etc.) por mensagem.
+    - Integração com MCP (Model Context Protocol).
+    - Gerenciamento de Múltiplas Conversas (Chat History Management): Criar, listar, alternar e excluir sessões.
+    - Geração automática de títulos para conversas baseada na primeira mensagem ou contexto inicial.
+    - Persistência total das sessões no `chrome.storage.local`.
+    - Renderização de Markdown com botão de "Copiar Código" em blocos de código.
+    - Auto-scroll inteligente no chat.
+    - Componente PlanChecklist: Renderização de planos como checklists interativos com status (pendente/concluído).
+  out_of_scope:
+    - Sincronização em nuvem das mensagens (foco em local-first).
+    - Aplicativo mobile ou desktop standalone.
+    - Pagamentos ou assinaturas in-app.
+stack:
+  language: "TypeScript / Go (opcional para ferramentas externas)"
+  frontend_framework: "SvelteKit (Svelte 5)"
+  ui_library: "Tailwind CSS"
+  build_tool: "Vite + adapter-static (SSG)"
+  communication: "Chrome Runtime Messaging (Streaming)"
+  storage: "chrome.storage.local"
+  markdown_engine: "marked"
+user_stories:
+  - "Como usuário, quero visualizar o 'raciocínio' do agente em tempo real antes de ele executar ações, para ganhar confiança no processo."
+  - "Como usuário, quero ver uma distinção clara entre quando o agente está 'pensando' e quando está 'agindo' (executando ferramentas)."
+  - "Como usuário, quero escolher uma Persona (ex: Especialista em Código) para que o agente adote o tom e o conhecimento técnico adequado."
+  - "Como usuário, quero ver uma estimativa de tokens usados para gerenciar o contexto e evitar cortes de memória do modelo."
+  - "Como usuário, quero copiar rapidamente blocos de código gerados com um botão dedicado para facilitar a colagem em meu IDE."
+  - "Como usuário, quero que o chat role automaticamente durante o streaming, mas pare se eu decidir ler uma parte anterior da conversa."
+  - "Como usuário, quero ver uma lista clara de etapas (steps) sendo executadas, com status de sucesso/erro e tempo decorrido."
+  - "Como usuário, quero uma interface limpa que não obstrua minha navegação, focada no conteúdo do chat."
+  - "Como usuário, quero anexar até 10 arquivos ou imagens para que o agente possa analisá-los no contexto da página ou da tarefa."
+  - "Como usuário, quero poder interromper o agente a qualquer momento através de um botão 'Stop' se ele estiver seguindo um caminho errado."
+  - "Como usuário, quero alternar entre diferentes modelos (Gemini, Claude, GPT) rapidamente no input para escolher o melhor custo/benefício ou performance."
+  - "Como usuário, quero ativar o 'Modo Plano' para que a IA crie um plano detalhado antes de agir, permitindo-me validar a estratégia e economizar tokens."
+  - "Como usuário, quero que o plano gerado pelo agente seja transformado em um checklist interativo, para que eu possa acompanhar o progresso visualmente."
+  - "Como usuário, quero que as respostas do assistente sejam formatadas em Markdown (negrito, listas, blocos de código) para melhor leitura."
+  - "Como usuário, quero criar uma nova sessão de chat limpa para iniciar um novo assunto sem perder o histórico anterior."
+  - "Como usuário, quero ver uma lista das minhas conversas passadas com títulos automáticos para encontrá-las facilmente."
+  - "Como usuário, quero alternar entre diferentes conversas salvas para retomar contextos específicos."
+  - "Como usuário, quero excluir conversas que não são mais necessárias para manter meu histórico organizado."
+entities:
+  - name: "Message"
+    description: "Representa uma entrada no chat. Tipos: 'user', 'assistant', 'thought', 'tool_result'. Inclui metadados de 'plan_mode', array de 'attachments' e 'token_count'."
+  - name: "ChatSession"
+    description: "Agrupamento de mensagens relacionadas. Contém id único, título gerado, timestamps de criação/atualização e a lista de mensagens associadas."
+  - name: "Persona"
+    description: "Configuração de prompt de sistema que define o comportamento e especialidade do agente."
+  - name: "PlanChecklist"
+    description: "Componente UI que renderiza listas de tarefas extraídas do Markdown como itens interativos com status de conclusão."
+  - name: "Step"
+    description: "Uma unidade de trabalho do agente (ex: 'Pesquisar no Google', 'Clicar em botão')."
+  - name: "AgentSession"
+    description: "Estado completo da interação atual, incluindo histórico, status do loop, modelo ativo, persona selecionada e preferências de 'Modo Plano'."
+  - name: "Attachment"
+    description: "Metadados e dados base64 de arquivos anexados (limite de 10 por mensagem)."
+  - name: "ProviderConfig"
+    description: "Configurações de API Key, Modelo e Endpoint dos provedores de LLM."
+api_endpoints:
+  - name: "RUN_AGENT (chrome.runtime)"
+    description: "Inicia o loop de execução do agente. Payload inclui mensagem, anexos, flag 'isPlanMode' e 'personaId'."
+  - name: "CANCEL_AGENT (chrome.runtime)"
+    description: "Solicita a parada imediata do loop de execução (abortar requisições e ferramentas)."
+  - name: "UPDATE_SESSION_CONFIG (chrome.runtime)"
+    description: "Atualiza o modelo selecionado, Persona ou o estado do Modo Plano para a próxima interação."
+  - name: "AGENT_STREAM (Event)"
+    description: "Fluxo de eventos (chunks) contendo texto, pensamentos ou atualizações de ferramentas."
+  - name: "GET_SESSIONS"
+    description: "Recupera todas as sessões de chat salvas no storage local."
+  - name: "CREATE_SESSION"
+    description: "Inicializa uma nova sessão de chat vazia."
+  - name: "DELETE_SESSION"
+    description: "Remove permanentemente uma sessão e suas mensagens do storage."
+  - name: "SWITCH_SESSION"
+    description: "Troca o ID da sessão ativa para carregar outro histórico."
+architecture:
+  frontend:
+    - "SvelteKit configurado com adapter-static e fallback: 'index.html'."
+    - "Rotas para: /sidepanel, /options, /popup."
+    - "Sidebar/Drawer lateral: Componente para navegação e gerenciamento do histórico de chat (lista de ChatSessions)."
+    - "Input de chat customizado com dropdown de modelos, seletor de Personas e menu popover para anexos/plano."
+    - "Indicador de tokens em tempo real na barra de status do input."
+    - "Estado reativo 'is_loading' e 'plan_mode_active'."
+    - "Implementação de botões de cópia em blocos de código Markdown usando ações Svelte (use:copy)."
+    - "Lógica de auto-scroll com 'intersection observer' ou verificação de posição de scroll."
+    - "Renderizador de Markdown integrado ao componente de mensagem (ChatBubble)."
+    - "Lógica de detecção de Planos: Quando em Modo Plano, a UI renderiza o conteúdo Markdown através do PlanChecklist em vez do parser padrão."
+  background:
+    - "Service Worker (V3) gerenciando o ciclo de vida do agente e chamadas de API."
+    - "Listener para CANCEL_AGENT que aciona AbortController e interrompe o loop de ferramentas."
+    - "Cálculo/Estimativa de tokens por mensagem para alimentar o monitor de contexto."
+    - "Lógica de Títulos: Ao detectar a primeira mensagem de uma sessão, solicita ao LLM um título curto (3-5 palavras) para a conversa."
+    - "Sincronização com chrome.storage.local: Persistência de sessões e mensagens indexadas por sessionId."
+    - "Injeção de prompts de sistema baseados na Persona selecionada."
+    - "Sistema de adaptadores para diferentes LLMs com suporte a multi-model logic."
+    - "Orquestrador de ferramentas (Browser Tools + MCP)."
+  interaction_flow:
+    - "1. Usuário abre a sidebar/drawer e escolhe uma sessão existente ou clica em 'Novo Chat'."
+    - "2. Usuário configura modelo, Persona e modo plano via UI de input."
+    - "3. Usuário envia mensagem -> UI envia RUN_AGENT com contexto completo e sessionId."
+    - "4. Se for a primeira mensagem da sessão, o Background gera o título automaticamente."
+    - "5. Se 'plan_mode' estiver ativo, o agente gera primeiro um bloco de pensamento longo com o plano e para."
+    - "6. UI detecta o plano e renderiza o componente PlanChecklist."
+    - "7. Background inicia stream -> Envia chunks identificados como 'thought' (pensando) ou 'tool_call' (agindo) e resposta final."
+    - "8. UI exibe pensamentos e ferramentas com feedback visual distinto para cada estado."
+    - "9. Usuário clica em 'Stop' -> UI envia CANCEL_AGENT -> Background aborta processos ativos."
+design_guidelines:
+  - "Paleta de cores: Brancos suaves (#F9F9F8), cinzas neutros e bordas finas."
+  - "Tipografia: Inter ou Geist Sans para um visual moderno e técnico."
+  - "Sidebar de Conversas: Estilo minimalista com hover effects suaves, botão de 'Novo Chat' proeminente e ícones de exclusão discretos."
+  - "Seletor de Modelo e Personas: Estilo minimalista, ícones representando especialidades."
+  - "Monitor de Tokens: Texto sutil (ex: '842 tokens used') próximo ao botão de envio."
+  - "Botão de Copiar Código: Ícone de prancheta discreto no canto superior direito de blocos de código (hover-only)."
+  - "Menu (+): Popover elegante com opções claras e indicação de limite de arquivos (0/10)."
+  - "Botão de Stop: Substitui o botão de envio quando o agente está processando."
+  - "Anexos: Miniaturas redondas com botão 'x' para remover antes de enviar."
+  - "Markdown: Estilização consistente para negritos, links (cor azul suave) e blocos de código (fundo cinza escuro)."
+  - "PlanChecklist: Checkboxes customizados, itens com strike-through ao serem marcados e animações de transição suaves."
+open_decisions:
+  - "Como lidar com arquivos grandes (> 5MB) considerando os limites do Chrome Messaging?"
+  - "O título automático deve ser gerado localmente (baseado em palavras-chave) ou via API do LLM (mais preciso, mas gasta tokens)?"
+  - "Deve haver um limite máximo de conversas salvas no histórico?"
+  - "As Personas devem ser editáveis pelo usuário ou apenas pré-definidas?"
+  - "Qual algoritmo de contagem de tokens usar para los diferentes provedores de forma unificada?"

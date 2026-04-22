@@ -1,0 +1,34 @@
+context_analysis:
+  project: Ultra Browser - AI Browser Agent
+  goal: Define UI/UX design tokens and specs for Model Selector and Addition Menu (+)
+  aesthetic: Claude-Inspired (Minimalist, soft grays, rounded corners)
+  target_components:
+    - Model Selector (Gemini, Anthropic, OpenAI)
+    - Addition Menu (+) (Flat Mode, Attach File)
+    - Attachment Preview (Horizontal list)
+    - Flat Mode Indicator
+
+minimal_files_to_read:
+  - brain/design.yaml
+  - brain/spec.yaml
+  - brain/tasks.yaml
+
+artifacts_to_produce:
+  - brain/design.yaml (update)
+  - brain/ux_concepts.yaml (update/create)
+  - brain/component_specs.yaml (update/create)
+  - brain/design_decisions.yaml (update/create)
+
+step_by_step_plan:
+  1. Analyze current design tokens and product specs.
+  2. Research "Claude" aesthetic details (shadows, transitions, spacing).
+  3. Draft UX concepts for the interaction flow (popover behavior, attachment list).
+  4. Specify component dimensions, states, and accessibility requirements.
+  5. Define design tokens (CSS variables) for the new elements.
+  6. Consolidate everything into brain/design.yaml and sandbox files.
+
+anti_hallucination_checklist:
+  - Check existing color palette in design.yaml to ensure consistency.
+  - Verify task ID TASK-205 in tasks.yaml.
+  - Ensure no .md files are created.
+  - Confirm WCAG 2.1 contrast ratios for icons and indicators.

@@ -1,0 +1,19 @@
+context: Atualizar o brain/spec.yaml para incluir o gerenciamento de múltiplas conversas (Chat History Management) no projeto Ultra Browser V3.
+files_to_read:
+  - brain/spec.yaml
+artifacts_to_produce:
+  - brain/spec.yaml
+steps:
+  - Analisar os requisitos solicitados pelo usuário (novas sessões, listagem, alternância, exclusão, persistência chrome.storage.local, UI Sidebar/Drawer).
+  - Atualizar a seção 'in_scope' do spec.yaml.
+  - Adicionar novas 'user_stories' relacionadas ao histórico de chat.
+  - Definir novas 'entities' (ex: ChatSession).
+  - Adicionar novos 'api_endpoints' para gerenciar o histórico.
+  - Atualizar a 'architecture' (frontend e background) para suportar as múltiplas conversas.
+  - Ajustar 'design_guidelines' para incluir a Sidebar/Drawer.
+  - Definir 'open_decisions' se houver incertezas.
+  - Apresentar o spec.yaml atualizado.
+anti_hallucination_checklist:
+  - Não inventar requisitos fora do solicitado.
+  - Manter a stack técnica (SvelteKit 5, chrome.storage.local).
+  - Seguir o estilo minimalista solicitado.

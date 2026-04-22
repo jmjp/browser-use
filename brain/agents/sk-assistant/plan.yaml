@@ -1,0 +1,23 @@
+context: "O usuário solicitou a decomposição das tarefas para 'Gerenciamento de Múltiplas Conversas' com base no spec.yaml atualizado. O spec.yaml possui approved: false, mas o comando do usuário direciona a ação imediata."
+files_to_read:
+  - "brain/spec.yaml"
+  - "brain/tasks.yaml"
+  - "src/lib/stores/history.svelte.ts"
+  - "src/lib/types/agent.ts"
+artifacts_to_produce:
+  - "brain/tasks.yaml"
+steps:
+  - "Analisar as mudanças no spec.yaml referentes a múltiplas sessões. (done)"
+  - "Verificar a estrutura atual da store de histórico e tipos. (done)"
+  - "Criar tarefas para refatoração da store (ChatSession). (done)"
+  - "Criar tarefas para o componente Sidebar.svelte. (done)"
+  - "Criar tarefas para lógica de CRUD de sessões. (done)"
+  - "Criar tarefas para geração automática de títulos (Background). (done)"
+  - "Criar tarefas para integração visual e botões de controle. (done)"
+  - "Atualizar brain/tasks.yaml com as novas tarefas, mantendo dependências e status. (done)"
+anti_hallucination_checklist:
+  - "Não criar tarefas duplicadas. (done)"
+  - "Garantir que os context_files existam. (done)"
+  - "Respeitar a hierarquia Svelte 5 (Runes). (done)"
+  - "Manter as tarefas atômicas. (done)"
+status: "done"

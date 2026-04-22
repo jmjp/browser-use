@@ -1,0 +1,43 @@
+context_analysis:
+  task: "TASK-103: Testes Unitários para Browser Tools"
+  objective: "Configurar Vitest para usar jsdom e criar testes unitários para as ferramentas de navegação e seletores em src/lib/tools/browser.ts, mockando as APIs do Chrome."
+  current_state:
+    - Browser tools migrate to TypeScript in src/lib/tools/browser.ts.
+    - Vitest and jsdom installed but not configured in vite.config.ts.
+    - No tests created yet.
+
+minimal_files_to_read:
+  - "src/lib/tools/browser.ts"
+  - "vite.config.ts"
+  - "package.json"
+
+artifacts_to_produce:
+  - "vite.config.ts" (updated)
+  - "src/lib/tools/browser.test.ts" (new)
+  - "brain/tasks.yaml" (updated)
+
+step_by_step_plan:
+  1. Update TASK-103 status to in_progress in brain/tasks.yaml.
+  2. Modify vite.config.ts to include Vitest configuration with environment: 'jsdom'.
+  3. Create src/lib/tools/browser.test.ts.
+  4. Implement mocks for chrome.tabs, chrome.debugger, and chrome.runtime in the test file.
+  5. Write test cases for each tool in BROWSER_TOOLS:
+     - list_tabs
+     - navigate
+     - screenshot
+     - get_content
+     - click
+     - type_text
+     - execute_script
+     - scroll
+     - wait_for_element
+     - get_page_info
+  6. Run vitest to verify all tests pass.
+  7. Update TASK-103 status to done in brain/tasks.yaml.
+
+anti_hallucination_checklist:
+  - Ensure chrome API calls use the correct signatures (some are async/promise-based in manifest V3, others use callbacks).
+  - Use vi.fn() or vi.spyOn() for mocks.
+  - Check that evaluateInTab is correctly tested by mocking sendCommand.
+  - Verify that wait_for_element is tested with a mocked MutationObserver if necessary, or by simulating the DOM change.
+  - Match the exact tool names and parameters as defined in BROWSER_TOOLS.

@@ -1,0 +1,27 @@
+version: "1.0"
+project: "Ultra Browser"
+
+concepts:
+  model_selector:
+    description: "Discrete model selection located at the top or bottom of the chat input area."
+    interaction: "Single click to switch between available LLM providers (Gemini, Anthropic, OpenAI)."
+    visual_style: "Pill-shaped or minimalist icon row with subtle tooltips or labels."
+    rationale: "Allows users to quickly switch models based on the task complexity without leaving the input context."
+
+  addition_menu:
+    description: "Multi-functional addition button (+) to expand input capabilities."
+    interaction: "Opens a minimalist popover containing 'Flat Mode' toggle and 'Attach File' trigger."
+    visual_style: "Floating or integrated circle button with a clear '+' symbol."
+    rationale: "Keeps the primary input clean while providing easy access to advanced features."
+
+  attachment_preview:
+    description: "Visual confirmation of files staged for upload."
+    interaction: "Horizontal scrollable list. Each item has a removal button (x) on hover."
+    visual_style: "Small thumbnails (for images) or file type icons (for documents) with truncated filenames."
+    rationale: "Provides immediate feedback on what will be sent, supporting the 10-file limit."
+
+  flat_mode_indicator:
+    description: "Visual status showing the agent is in 'Planning First' mode."
+    interaction: "Static indicator, potentially toggleable via the (+) menu."
+    visual_style: "Subtle badge with an icon (e.g., a map or list) and the text 'Flat Mode Active'."
+    rationale: "Ensures user is aware that the agent will wait for plan approval before executing tools."

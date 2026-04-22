@@ -1,0 +1,68 @@
+version: "1.0"
+project: "Ultra Browser"
+
+specs:
+  model_selector:
+    container:
+      padding: "2px 4px"
+      border_radius: "var(--radius-full)"
+      bg: "transparent"
+      border: "1px solid var(--color-border-light)"
+    item:
+      size: "24px"
+      padding: "4px"
+      border_radius: "var(--radius-md)"
+      states:
+        default: "opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
+        active: "opacity-100 grayscale-0 bg-var(--color-primary-light)"
+    icons:
+      gemini: "#4285F4"
+      anthropic: "#D97706" # Amber 600
+      openai: "#10A37F"
+
+  addition_menu:
+    trigger:
+      size: "32px"
+      bg: "var(--color-border-light)"
+      color: "var(--color-text-muted)"
+      icon: "plus"
+      states:
+        hover: "bg-var(--color-border) color-var(--color-text-main)"
+    popover:
+      width: "180px"
+      padding: "8px"
+      bg: "var(--color-surface)"
+      border: "1px solid var(--color-border)"
+      shadow: "var(--shadow-md)"
+      border_radius: "var(--radius-lg)"
+    options:
+      item_height: "36px"
+      padding: "0 12px"
+      font_size: "var(--font-sm)"
+      icon_size: "16px"
+
+  attachment_preview:
+    container:
+      height: "64px"
+      padding: "8px 0"
+      gap: "8px"
+    item:
+      size: "48px"
+      bg: "var(--color-surface)"
+      border: "1px solid var(--color-border-light)"
+      border_radius: "var(--radius-md)"
+      thumbnail_fit: "cover"
+    remove_button:
+      size: "16px"
+      bg: "var(--color-status-error)"
+      color: "white"
+      position: "top-right (absolute)"
+
+  flat_mode_badge:
+    bg: "var(--color-primary-light)"
+    text: "var(--color-primary)"
+    font_weight: "var(--weight-medium)"
+    font_size: "var(--font-xs)"
+    padding: "2px 8px"
+    border_radius: "var(--radius-full)"
+    icon: "map-pin"
