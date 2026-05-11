@@ -1,26 +1,40 @@
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { resolve, join, relative } from 'path';
 
 const __dirname = resolve();
 const buildDir = resolve(__dirname, 'dist');
-const distDir = resolve(__dirname, 'dist');
-const zipFile = resolve(distDir, 'ultra-browser.zip');
 
 function run(command: string) {
   console.log(`Running: ${command}`);
   execSync(command, { stdio: 'inherit' });
 }
 
+function getAllFiles(dir: string, ext: string): string[] {
+  let results: string[] = [];
+  if (!existsSync(dir)) return results;
+  const list = readdirSync(dir);
+  list.forEach((file) => {
+    file = join(dir, file);
+    const stat = statSync(file);
+    if (stat && stat.isDirectory()) {
+      results = results.concat(getAllFiles(file, ext));
+    } else if (file.endsWith(ext)) {
+      results.push(file);
+    }
+  });
+  return results;
+}
+
 async function main() {
   console.log('Starting build process...');
 
   // 1. Clean up
-  if (existsSync(distDir)) {
+  if (existsSync(buildDir)) {
     console.log('Cleaning dist directory...');
-    rmSync(distDir, { recursive: true, force: true });
+    rmSync(buildDir, { recursive: true, force: true });
   }
-  mkdirSync(distDir, { recursive: true });
+  mkdirSync(buildDir, { recursive: true });
 
   // 2. Build SvelteKit
   console.log('Building SvelteKit app...');
@@ -32,36 +46,37 @@ async function main() {
 
   // 3.5 Post-process SvelteKit build for Chrome Extension CSP
   console.log('Post-processing SvelteKit build for CSP compliance...');
-  const indexPath = resolve(buildDir, 'index.html');
-  if (existsSync(indexPath)) {
-    let indexHtml = readFileSync(indexPath, 'utf-8');
+  
+  const internalScriptsDir = resolve(buildDir, 'internal-scripts');
+  if (!existsSync(internalScriptsDir)) {
+    mkdirSync(internalScriptsDir, { recursive: true });
+  }
 
-    // Find the inline script
-    // SvelteKit 5 usually injects one script block for initialization
-    const scriptRegex = /<script>([\s\S]*?)<\/script>/g;
-    let match;
+  // --- Process HTML Files ---
+  const htmlFiles = getAllFiles(buildDir, '.html');
+  for (const filePath of htmlFiles) {
+    const relativePath = relative(buildDir, filePath);
+    let html = readFileSync(filePath, 'utf-8');
+    const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
     let count = 0;
+    
+    const newHtml = html.replace(scriptRegex, (match, content) => {
+      if (match.includes(' src=')) return match;
+      const inlineContent = content.trim();
+      if (!inlineContent) return match;
 
-    while ((match = scriptRegex.exec(indexHtml)) !== null) {
-      const inlineContent = match[1];
-      const scriptFilename = `internal/loader-${count}.js`;
-      const scriptPath = resolve(buildDir, scriptFilename);
-
-      // Write the inline content to a new file
-      writeFileSync(scriptPath, inlineContent);
-      console.log(`Moved inline script to ${scriptFilename}`);
+      const scriptId = relativePath.replace(/[/\\]/g, '-').replace('.html', '');
+      const scriptFilename = `internal-scripts/loader-${scriptId}-${count}.js`;
+      const scriptAbsPath = resolve(buildDir, scriptFilename);
+      
+      writeFileSync(scriptAbsPath, inlineContent);
+      console.log(`  -> Extracted inline script from ${relativePath} to ${scriptFilename}`);
+      
       count++;
-    }
-
-    // Replace all inline scripts with external ones
-    let newCount = 0;
-    indexHtml = indexHtml.replace(/<script>([\s\S]*?)<\/script>/g, () => {
-      const tag = `<script src="/internal/loader-${newCount}.js"></script>`;
-      newCount++;
-      return tag;
+      return `<script src="/${scriptFilename}"></script>`;
     });
-
-    writeFileSync(indexPath, indexHtml);
+    
+    if (html !== newHtml) writeFileSync(filePath, newHtml);
   }
 
   console.log('Build completed successfully! Files are in the dist/ directory.');

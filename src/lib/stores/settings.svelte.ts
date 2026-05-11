@@ -20,6 +20,7 @@ export interface Settings {
   model: string;
   baseUrl?: string;
   personaId?: string;
+  theme?: 'light' | 'dark' | 'system';
 }
 
 class SettingsStore {
@@ -27,7 +28,8 @@ class SettingsStore {
     provider: 'gemini',
     apiKey: '',
     model: 'gemini-1.5-flash',
-    personaId: 'general'
+    personaId: 'general',
+    theme: 'dark'
   });
 
   planModeEnabled = $state(false);

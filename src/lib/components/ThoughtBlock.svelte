@@ -16,7 +16,7 @@
   let is_expanded = $state(initially_expanded);
 </script>
 
-<div class="mb-4 border-l-2 border-[var(--color-status-thinking)] pl-4 py-1 bg-blue-50/10 rounded-r-md">
+<div class="mb-2 border-l-2 border-[var(--color-status-thinking)] pl-4 py-1 bg-blue-50/10 rounded-r-md">
   <button 
     onclick={() => is_expanded = !is_expanded}
     class="flex items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors text-[11px] font-semibold cursor-pointer w-full text-left"

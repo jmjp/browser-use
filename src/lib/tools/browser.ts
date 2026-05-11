@@ -544,6 +544,32 @@ ${script}
 ];
 
 /**
+ * Detaches the debugger from all tabs where it is currently attached.
+ * Used for cleanup when the agent finishes its task.
+ */
+export async function detachAllDebuggers(): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.debugger.getTargets((targets) => {
+      const attachedTargets = targets.filter(t => t.attached && t.tabId);
+      if (attachedTargets.length === 0) {
+        resolve();
+        return;
+      }
+
+      let count = 0;
+      attachedTargets.forEach((target) => {
+        chrome.debugger.detach({ tabId: target.tabId }, () => {
+          count++;
+          if (count === attachedTargets.length) {
+            resolve();
+          }
+        });
+      });
+    });
+  });
+}
+
+/**
  * Recorta uma imagem em Base64 usando OffscreenCanvas.
  */
 async function cropImage(dataUrl: string, rect: any): Promise<string> {

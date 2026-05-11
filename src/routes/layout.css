@@ -53,6 +53,24 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+:root.dark {
+  --color-primary: #60A5FA;
+  --color-primary-soft: #93C5FD;
+  --color-primary-light: #1E293B;
+  --color-surface: #1E293B;
+  --color-background: #0F172A;
+  --color-text-main: #F1F5F9;
+  --color-text-muted: #94A3B8;
+  --color-border: #334155;
+  --color-border-light: #1E293B;
+  --color-status-thinking: #60A5FA;
+  --color-status-success: #34D399;
+  --color-status-error: #F87171;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text-main);
@@ -60,4 +78,62 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Markdown Spacing Overrides */
+.prose p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose ul, 
+.prose ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.prose li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.prose pre {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--color-border-light);
+  overflow-x: auto;
+}
+
+:root.dark .prose pre {
+  background: #0F172A;
+}
+
+.prose code {
+  font-family: monospace;
+  background: var(--color-border-light);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
+}
+
+:root.dark .prose code {
+  background: #334155;
+}
+
+.prose pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.85rem;
 }

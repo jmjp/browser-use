@@ -16,7 +16,8 @@ const config = {
 			precompress: false,
 			strict: true
 		}),
-		appDir: 'internal'
+		appDir: 'internal',
+		inlineStyleThreshold: 0
 	}
 };
 

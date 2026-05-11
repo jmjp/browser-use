@@ -1,4 +1,4 @@
-import { BROWSER_TOOLS, type BrowserTool } from '../lib/tools/browser';
+import { BROWSER_TOOLS, detachAllDebuggers, type BrowserTool } from '../lib/tools/browser';
 import { getLLMAdapter, type LLMMessage, type LLMConfig } from '../lib/services/llm';
 import type { AgentStep, AgentMessage, StepType } from '../lib/types/agent';
 
@@ -214,6 +214,8 @@ async function* runAgentLoop(
     session.status = 'idle';
   } finally {
     session.controller = undefined;
+    // Garante que o modo de depuração seja encerrado ao terminar o loop
+    await detachAllDebuggers();
   }
 
   yield { type: 'done', sessionId };
@@ -266,6 +268,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         session.controller.abort();
       }
     }
+    // Garante limpeza imediata ao cancelar
+    detachAllDebuggers().catch(() => {});
     sendResponse({ status: 'stopped' });
   }
   return true;

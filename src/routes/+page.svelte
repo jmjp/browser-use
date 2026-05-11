@@ -20,8 +20,8 @@
       <div class="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity z-10 flex gap-2">
         <span class="text-[9px] font-mono text-[var(--color-text-muted)] bg-[var(--color-background)] px-1.5 py-0.5 rounded border border-[var(--color-border-light)]">${lang}</span>
         <button 
-          class="p-1 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-primary)] shadow-sm"
-          onclick="navigator.clipboard.writeText(\`${code.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+          class="p-1 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-primary)] shadow-sm copy-code-btn"
+          data-code="${code.replace(/"/g, '&quot;')}"
           title="Copiar código"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -55,6 +55,24 @@
 
   onMount(() => {
     settingsStore.load();
+    
+    // Global listener for copy code buttons (delegation)
+    const handleGlobalClick = (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest('.copy-code-btn') as HTMLButtonElement;
+      if (btn) {
+        const code = btn.getAttribute('data-code');
+        if (code) {
+          navigator.clipboard.writeText(code);
+          const originalContent = btn.innerHTML;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"/></svg>';
+          setTimeout(() => {
+            btn.innerHTML = originalContent;
+          }, 2000);
+        }
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+
     const listener = (message: any) => {
       if (message.type === 'AGENT_EVENT') {
         const { event } = message;
@@ -428,7 +446,7 @@
                   historyStore.updateStep(msg.id, step.id, { metadata: { ...step.metadata, tasks: updatedTasks } });
                 }} />
               {:else}
-                <div class="prose prose-sm text-[var(--color-text-main)] max-w-none relative group/text">
+                <div class="prose prose-sm text-[var(--color-text-main)] max-w-none relative group/text whitespace-normal mb-2 last:mb-0">
                   {@html marked.parse(step.content)}
                   <button onclick={() => copy_to_clipboard(step.content, step.id)} class="absolute top-0 right-0 p-1.5 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-md opacity-0 group-hover/text:opacity-100 transition-all shadow-sm hover:border-[var(--color-primary-soft)] hover:text-[var(--color-primary)]" title="Copiar texto">
                     {#if copy_feedback_id === step.id}
