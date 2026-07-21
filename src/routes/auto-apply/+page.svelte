@@ -1,139 +1,115 @@
 <script lang="ts">
-	import { GoalEngine, type AutoApplyGoal, type GoalConfig, type CandidateProfile } from '$lib/goal-engine';
-	import { getLLMAdapter } from '$lib/services/llm';
-	import { onMount } from 'svelte';
+	import { AutoApplyWorkflow, type WorkflowConfig, type WorkflowState } from '$lib/goal-engine';
+	import { onDestroy } from 'svelte';
 
 	let skillsInput = 'Go, Svelte, PostgreSQL, Docker, AWS';
-	let keywordsInput = 'golang, backend, software engineer, svelte';
-	let maxApps = 10;
+	let keywordsInput = 'golang, backend, software engineer';
+	let portalsInput = 'gupy, programathor';
+	let maxApps = 5;
 	let minScore = 6;
 	let dryRun = true;
+	let apiKey = $state('');
 	let running = false;
-	let log: string[] = [];
-	let portal = 'gupy';
-	let engine: GoalEngine | null = null;
+	let wf: AutoApplyWorkflow | null = null;
+	let state = $state<WorkflowState | null>(null);
 
-	const profile: CandidateProfile = {
-		name: 'João',
-		skills: [],
-		experience: '6+ anos como engenheiro de software, foco em Go e arquitetura hexagonal',
-		target_roles: ['Software Engineer', 'Backend Engineer', 'Staff Engineer'],
-		preferred_locations: ['São Paulo', 'Remoto'],
-		work_models: ['remote', 'hybrid'],
-	};
-
-	onMount(() => {
-		const llmConfig = {
-			provider: 'deepseek' as const,
-			apiKey: '',
+	function start() {
+		running = true;
+		const cfg: WorkflowConfig = {
+			portals: portalsInput.split(',').map(s => s.trim()),
+			keywords: keywordsInput.split(',').map(s => s.trim()),
+			maxApps,
+			minScore,
+			dryRun,
+			apiKey,
 			model: 'deepseek-v4-flash',
 			baseUrl: 'https://api.deepseek.com/v1/chat/completions',
-		};
-		engine = new GoalEngine(llmConfig);
-	});
-
-	async function startAutoApply() {
-		if (!engine) return;
-		running = true;
-		log = [];
-		
-		profile.skills = skillsInput.split(',').map(s => s.trim());
-		
-		const config: GoalConfig = {
-			portals: portal.split(',').map(s => s.trim()),
-			keywords: keywordsInput.split(',').map(s => s.trim()),
-			locations: ['Remoto', 'São Paulo'],
-			work_models: ['remote', 'hybrid'],
-			max_applications: maxApps,
-			min_score: minScore,
-			dry_run: dryRun,
-			profile,
+			profile: {
+				skills: skillsInput.split(',').map(s => s.trim()),
+				experience: '6+ anos como engenheiro de software, Go e arquitetura hexagonal',
+				targetRoles: ['Software Engineer', 'Backend Engineer'],
+				workModes: ['remote', 'hybrid'],
+			},
 		};
 
-		const goal = await engine.createGoal('search_and_apply', 
-			`Encontrar e aplicar em ${maxApps} vagas de ${keywordsInput}`, 
-			config
-		);
-
-		log.push(`🚀 Goal criado: ${goal.objective}`);
-		log.push(`📋 Perfil: ${profile.skills.join(', ')}`);
-		log.push(dryRun ? '🔵 Modo DRY RUN — sem candidaturas reais' : '🔴 Modo REAL — vai candidatar de verdade');
-
-		engine.runGoal(goal.id, (g) => {
-			log.push(`[${new Date().toLocaleTimeString()}] ${g.progress.current_action}`);
-			if (g.status === 'completed') {
-				log.push(`✅ Goal completo! ${g.progress.jobs_applied} candidaturas, ${g.progress.jobs_found} vagas encontradas`);
-				running = false;
-			}
-			if (g.status === 'failed') {
-				log.push(`❌ Goal falhou: ${g.progress.current_action}`);
-				running = false;
-			}
-		});
+		wf = new AutoApplyWorkflow(cfg);
+		wf.start((s) => { state = s; if (s.status !== 'running') running = false; });
 	}
 
 	function stop() {
+		wf?.cancel();
 		running = false;
-		log.push('🛑 Parado pelo usuário');
 	}
+
+	onDestroy(() => wf?.cancel());
+
+	const lastLines = $derived(state?.log?.slice(-30) || []);
 </script>
 
 <div class="p-6 max-w-4xl mx-auto">
-	<h1 class="text-2xl font-bold mb-2">🤖 Auto-Apply Agent</h1>
-	<p class="text-gray-500 mb-6">Agente persistente que busca e aplica em vagas até atingir a meta</p>
+	<h1 class="text-2xl font-bold mb-1">🤖 Auto-Apply Workflow</h1>
+	<p class="text-gray-500 mb-6 text-sm">Workflow determinístico: busca → pontua → aplica → repete</p>
 
-	<div class="grid grid-cols-2 gap-4 mb-6">
-		<div class="space-y-3">
+	<div class="grid grid-cols-2 gap-6 mb-6">
+		<div class="space-y-4">
 			<div>
-				<label class="block text-sm font-medium mb-1">Skills (separadas por vírgula)</label>
-				<input bind:value={skillsInput} class="w-full px-3 py-2 border rounded-lg text-sm" />
+				<label class="block text-xs font-medium text-gray-600 mb-1">Skills</label>
+				<input bind:value={skillsInput} class="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
 			</div>
 			<div>
-				<label class="block text-sm font-medium mb-1">Palavras-chave para busca</label>
-				<input bind:value={keywordsInput} class="w-full px-3 py-2 border rounded-lg text-sm" />
+				<label class="block text-xs font-medium text-gray-600 mb-1">Palavras-chave</label>
+				<input bind:value={keywordsInput} class="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
 			</div>
 			<div>
-				<label class="block text-sm font-medium mb-1">Portal(is)</label>
-				<input bind:value={portal} class="w-full px-3 py-2 border rounded-lg text-sm" />
-				<p class="text-xs text-gray-400 mt-1">gupy, linkedin, indeed, programathor</p>
+				<label class="block text-xs font-medium text-gray-600 mb-1">Portais</label>
+				<input bind:value={portalsInput} class="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
+				<p class="text-xs text-gray-400 mt-1">gupy, linkedin, indeed, programathor, geekhunter, catho, infojobs</p>
+			</div>
+			<div>
+				<label class="block text-xs font-medium text-gray-600 mb-1">DeepSeek API Key</label>
+				<input bind:value={apiKey} type="password" placeholder="sk-..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
 			</div>
 		</div>
-		<div class="space-y-3">
+		<div class="space-y-4">
 			<div>
-				<label class="block text-sm font-medium mb-1">Max candidaturas</label>
-				<input type="number" bind:value={maxApps} class="w-full px-3 py-2 border rounded-lg text-sm" />
+				<label class="block text-xs font-medium text-gray-600 mb-1">Max candidaturas</label>
+				<input type="number" bind:value={maxApps} min="1" max="50" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
 			</div>
 			<div>
-				<label class="block text-sm font-medium mb-1">Score mínimo</label>
-				<input type="number" bind:value={minScore} min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm" />
+				<label class="block text-xs font-medium text-gray-600 mb-1">Score mínimo</label>
+				<input type="number" bind:value={minScore} min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
 			</div>
-			<div class="flex items-center gap-2 mt-4">
-				<input type="checkbox" bind:checked={dryRun} id="dryrun" />
-				<label for="dryrun" class="text-sm">Dry run (não aplicar de verdade)</label>
-			</div>
+			<label class="flex items-center gap-2 mt-4">
+				<input type="checkbox" bind:checked={dryRun} />
+				<span class="text-sm">Dry run</span>
+			</label>
 		</div>
 	</div>
 
-	<div class="flex gap-2 mb-6">
-		<button 
-			on:click={startAutoApply}
-			disabled={running}
-			class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 hover:bg-blue-700"
-		>
-			{running ? '⏳ Rodando...' : '▶ Iniciar Auto-Apply'}
+	<div class="flex gap-3 mb-4">
+		<button on:click={start} disabled={running || !apiKey}
+			class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-40 hover:bg-blue-700 text-sm">
+			{running ? '⏳ Rodando...' : '▶ Iniciar'}
 		</button>
-		<button 
-			on:click={stop}
-			disabled={!running}
-			class="px-6 py-2 bg-red-500 text-white rounded-lg font-medium disabled:opacity-50 hover:bg-red-600"
-		>
+		<button on:click={stop} disabled={!running}
+			class="px-6 py-2.5 bg-red-500 text-white rounded-lg font-medium disabled:opacity-40 hover:bg-red-600 text-sm">
 			⏹ Parar
 		</button>
 	</div>
 
-	{#if log.length > 0}
-		<div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-xs h-80 overflow-y-auto">
-			{#each log as line}
+	{#if state}
+		<div class="grid grid-cols-4 gap-3 mb-4 text-center text-sm">
+			<div class="bg-blue-50 p-2 rounded font-semibold">{state.found} encontradas</div>
+			<div class="bg-yellow-50 p-2 rounded font-semibold">{state.scored} analisadas</div>
+			<div class="bg-green-50 p-2 rounded font-semibold">{state.applied} aplicadas</div>
+			<div class="bg-red-50 p-2 rounded font-semibold">{state.failed} falhas</div>
+		</div>
+		<div class="mb-4 text-sm">{state.step}</div>
+	{/if}
+
+	{#if lastLines.length > 0}
+		<div class="bg-gray-900 text-green-300 p-4 rounded-lg font-mono text-xs leading-5 h-80 overflow-y-auto">
+			{#each lastLines as line}
 				<div>{line}</div>
 			{/each}
 		</div>
