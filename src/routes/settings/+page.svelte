@@ -1,22 +1,57 @@
 <script lang="ts">
 	import { settingsStore, type Settings } from '$lib/stores/settings.svelte';
-	import { onMount } from 'svelte';
+	import { fetchAvailableModels } from '$lib/services/llm/models';
 
 	let localSettings = $state<Settings>({ ...settingsStore.settings });
 	let saved = $state(false);
+	let loadingModels = $state(false);
+	let fetchError = $state<string | null>(null);
+	let fetchedModelsMap = $state<Record<string, string[]>>({});
 
-	const providerModels = {
+	const defaultModels: Record<string, string[]> = {
 		gemini: [
 			'gemini-2.5-flash-lite',
 			'gemini-3-flash-preview',
 			'gemini-3.1-flash-lite-preview',
 			'gemini-3.1-pro-preview'
 		],
-		anthropic: ['claude-4.6-sonnet', 'claude-4.7-sonnet'],
-		openai: ['gpt-4o', 'gpt-5.0', 'gpt-5.1'],
+		anthropic: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
+		openai: ['gpt-4o', 'gpt-4o-mini', 'o1-mini', 'o3-mini'],
 		deepseek: ['deepseek-chat', 'deepseek-reasoner'],
 		custom: []
 	};
+
+	let currentModels = $derived(
+		fetchedModelsMap[localSettings.provider] || defaultModels[localSettings.provider] || []
+	);
+
+	let customModels = $derived(
+		fetchedModelsMap['custom'] || []
+	);
+
+	async function loadModelsFromApi() {
+		loadingModels = true;
+		fetchError = null;
+		try {
+			const models = await fetchAvailableModels(
+				localSettings.provider,
+				localSettings.apiKey,
+				localSettings.baseUrl
+			);
+			if (models.length === 0) {
+				fetchError = 'Nenhum modelo retornado pela API.';
+			} else {
+				fetchedModelsMap = { ...fetchedModelsMap, [localSettings.provider]: models };
+				if (!models.includes(localSettings.model)) {
+					localSettings.model = models[0];
+				}
+			}
+		} catch (err: any) {
+			fetchError = err.message || 'Falha ao buscar modelos.';
+		} finally {
+			loadingModels = false;
+		}
+	}
 
 	async function handleSave() {
 		await settingsStore.save(localSettings);
@@ -26,7 +61,7 @@
 
 	// Update default model when provider changes
 	$effect(() => {
-		const models = providerModels[localSettings.provider];
+		const models = currentModels;
 		if (models.length > 0 && !models.includes(localSettings.model)) {
 			localSettings.model = models[0];
 		}
@@ -62,7 +97,7 @@
 				Provedor
 			</h2>
 			<div class="grid grid-cols-2 gap-2">
-				{#each Object.keys(providerModels) as provider}
+				{#each Object.keys(defaultModels) as provider}
 					<button
 						class="rounded-[var(--radius-lg)] border px-3 py-2.5 text-xs font-medium transition-all {localSettings.provider ===
 						provider
@@ -104,11 +139,31 @@
 			/>
 		</section>
 
-		<section class="space-y-4">
-			<h2 class="text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
-				Modelo
-			</h2>
-			{#if localSettings.provider === 'custom'}
+			<div class="flex items-center justify-between">
+				<h2 class="text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+					Modelo
+				</h2>
+				<button
+					type="button"
+					onclick={loadModelsFromApi}
+					disabled={loadingModels}
+					class="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-primary)] hover:underline disabled:opacity-50"
+				>
+					{#if loadingModels}
+						<svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+						Buscando...
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+						Buscar da API
+					{/if}
+				</button>
+			</div>
+
+			{#if fetchError}
+				<p class="text-xs text-red-500 font-medium">{fetchError}</p>
+			{/if}
+
+			{#if localSettings.provider === 'custom' && customModels.length === 0}
 				<input
 					type="text"
 					bind:value={localSettings.model}
@@ -116,16 +171,20 @@
 					class="w-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm transition-all focus:border-[var(--color-primary-soft)] focus:outline-none"
 				/>
 			{:else}
-				<select
-					bind:value={localSettings.model}
-					class="w-full cursor-pointer appearance-none rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm transition-all focus:border-[var(--color-primary-soft)] focus:outline-none"
-				>
-					{#each providerModels[localSettings.provider] as model}
-						<option value={model}>{model}</option>
-					{/each}
-				</select>
+				<div class="relative">
+					<select
+						bind:value={localSettings.model}
+						class="w-full cursor-pointer appearance-none rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm transition-all focus:border-[var(--color-primary-soft)] focus:outline-none pr-8"
+					>
+						{#each currentModels as model}
+							<option value={model}>{model}</option>
+						{/each}
+					</select>
+					<div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+					</div>
+				</div>
 			{/if}
-		</section>
 	</main>
 
 	<footer class="border-t border-[var(--color-border-light)] bg-[var(--color-surface)] p-6">

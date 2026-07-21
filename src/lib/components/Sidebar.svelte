@@ -1,5 +1,6 @@
 <script lang="ts">
   import { historyStore } from '$lib/stores/history.svelte';
+  import { knowledgeStore } from '$lib/stores/knowledge.svelte';
   import { slide, fade } from 'svelte/transition';
 
   interface Props {
@@ -75,6 +76,9 @@
 
     <!-- Session List -->
     <div class="flex-1 overflow-y-auto px-2 space-y-1 py-2">
+      <div class="px-2 pt-1 pb-1 flex items-center justify-between">
+        <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Conversas</span>
+      </div>
       {#each historyStore.sessions as session (session.id)}
         <div 
           class="w-full group flex items-center justify-between p-1 rounded-[var(--radius-lg)] transition-all
@@ -102,6 +106,36 @@
           </button>
         </div>
       {/each}
+
+      <!-- Aprendizados / Memória -->
+      <div class="px-2 pt-4 pb-1 flex items-center justify-between border-t border-[var(--color-border-light)] mt-4">
+        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 4.24 4.24"/><path d="M2 18h12"/></svg>
+          Aprendizados Salvos ({knowledgeStore.memories.length})
+        </span>
+      </div>
+
+      {#if knowledgeStore.memories.length === 0}
+        <p class="text-[10px] text-[var(--color-text-muted)] italic px-2 py-1">
+          Nenhum aprendizado salvo ainda. Ao concluir tarefas com sucesso, você poderá salvar os passos aqui!
+        </p>
+      {:else}
+        {#each knowledgeStore.memories as memory (memory.id)}
+          <div class="w-full group flex items-start justify-between p-2 rounded-[var(--radius-lg)] hover:bg-[var(--color-border-light)] transition-all">
+            <div class="flex-1 min-w-0 pr-1">
+              <p class="text-xs font-bold text-[var(--color-text-main)] truncate">{memory.title}</p>
+              <p class="text-[10px] text-[var(--color-text-muted)] line-clamp-2 mt-0.5">{memory.stepsSummary}</p>
+            </div>
+            <button
+              onclick={() => knowledgeStore.deleteMemory(memory.id)}
+              class="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 hover:text-red-500 rounded transition-all text-[var(--color-text-muted)] shrink-0"
+              title="Excluir aprendizado"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+          </div>
+        {/each}
+      {/if}
     </div>
 
     <!-- Footer -->

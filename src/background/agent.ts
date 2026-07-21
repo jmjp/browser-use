@@ -68,8 +68,22 @@ async function* runAgentLoop(
   session.status = 'running';
 
   // Inject System Prompt / Persona if session is new
-  if (personaPrompt && session.messages.length === 0) {
-    session.messages.push({ role: 'system', content: personaPrompt });
+  if (session.messages.length === 0) {
+    let systemContent = personaPrompt || '';
+
+    // Carrega aprendizados salvos
+    const { agent_memories } = await chrome.storage.local.get('agent_memories');
+    if (Array.isArray(agent_memories) && agent_memories.length > 0) {
+      const memoriesSummary = agent_memories.map((m: any, i: number) => 
+        `[Aprendizado #${i + 1} - ${m.title}]: ${m.stepsSummary}`
+      ).join('\n');
+
+      systemContent += `\n\n[SISTEMA DE APRENDIZADO - MEMÓRIAS DE FLUXOS ANTERIORES]:\n${memoriesSummary}\n\nUtilize o conhecimento dos aprendizados acima quando a tarefa do usuário for semelhante para evitar erros e economizar passos.`;
+    }
+
+    if (systemContent.trim()) {
+      session.messages.push({ role: 'system', content: systemContent.trim() });
+    }
   }
 
   let fullPrompt = userPrompt;
@@ -271,6 +285,57 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Garante limpeza imediata ao cancelar
     detachAllDebuggers().catch(() => {});
     sendResponse({ status: 'stopped' });
+  } else if (message.type === 'AGENT_BTW') {
+    const { sessionId, prompt } = message;
+    console.log(`[Background] Recebido AGENT_BTW para sessão ${sessionId}: ${prompt}`);
+    
+    (async () => {
+      const config = await getProviderConfig();
+      if (!config) {
+        chrome.runtime.sendMessage({
+          type: 'AGENT_EVENT',
+          event: { type: 'btw_response', content: 'Configuração de LLM não encontrada.', sessionId }
+        }).catch(() => {});
+        return;
+      }
+
+      const adapter = getLLMAdapter(config);
+      const session = sessions.get(sessionId);
+      const historyMessages = session ? session.messages : [];
+      
+      const btwMessages: LLMMessage[] = [
+        ...historyMessages,
+        { 
+          role: 'user', 
+          content: `[PERGUNTA EM SEGUNDO PLANO (/btw)]: O usuário fez a seguinte pergunta rápida enquanto você executa tarefas. Responda de forma direta e concisa sem executar ferramentas ou interromper o trabalho em andamento.\n\nPergunta: ${prompt}` 
+        }
+      ];
+
+      try {
+        const stream = adapter.generateStream(btwMessages, [], config);
+        let fullText = '';
+        for await (const chunk of stream) {
+          if (chunk.type === 'text' && chunk.content) {
+            fullText += chunk.content;
+            chrome.runtime.sendMessage({
+              type: 'AGENT_EVENT',
+              event: { type: 'btw_chunk', content: chunk.content, sessionId }
+            }).catch(() => {});
+          }
+        }
+        chrome.runtime.sendMessage({
+          type: 'AGENT_EVENT',
+          event: { type: 'btw_done', content: fullText, sessionId }
+        }).catch(() => {});
+      } catch (err: any) {
+        chrome.runtime.sendMessage({
+          type: 'AGENT_EVENT',
+          event: { type: 'btw_response', content: `Erro ao responder /btw: ${err.message}`, sessionId }
+        }).catch(() => {});
+      }
+    })();
+
+    sendResponse({ status: 'btw_processing' });
   }
   return true;
 });

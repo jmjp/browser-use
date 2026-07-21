@@ -9,6 +9,7 @@
   import { marked } from 'marked';
   import PlanChecklist from '$lib/components/PlanChecklist.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
+  import SaveLearningCard from '$lib/components/SaveLearningCard.svelte';
 
   // Custom Markdown Renderer for Code Block Copy Buttons
   const renderer = new marked.Renderer();
@@ -204,6 +205,37 @@
         });
       }
       scroll_to_bottom(true);
+    } else if (event.type === 'btw_chunk') {
+      if (lastMessage && lastMessage.role === 'assistant') {
+        const lastStep = lastMessage.steps[lastMessage.steps.length - 1];
+        if (lastStep && lastStep.id === 'btw-streaming-step') {
+          lastStep.content += event.content;
+        } else {
+          historyStore.addStep(lastMessage.id, {
+            id: 'btw-streaming-step',
+            type: 'text',
+            content: `💡 **[Resposta /btw]**: ${event.content}`,
+            timestamp: new Date()
+          });
+        }
+      }
+      scroll_to_bottom();
+    } else if (event.type === 'btw_done') {
+      if (lastMessage && lastMessage.role === 'assistant') {
+        const lastStep = lastMessage.steps.find(s => s.id === 'btw-streaming-step');
+        if (lastStep) lastStep.id = Math.random().toString();
+      }
+      scroll_to_bottom();
+    } else if (event.type === 'btw_response') {
+      if (lastMessage && lastMessage.role === 'assistant') {
+        historyStore.addStep(lastMessage.id, {
+          id: Math.random().toString(),
+          type: 'text',
+          content: `💡 **[Resposta /btw]**: ${event.content}`,
+          timestamp: new Date()
+        });
+      }
+      scroll_to_bottom();
     }
   }
 
@@ -290,8 +322,38 @@
   }
 
   function handle_send() {
-    if ((!input_value.trim() && attachments.length === 0) || is_loading || !settingsStore.isConfigured) return;
-    
+    if (!input_value.trim() && attachments.length === 0) return;
+    if (!settingsStore.isConfigured) return;
+
+    const rawPrompt = input_value.trim();
+
+    // Se o agente estiver rodando e a mensagem começar com /btw (ou /bytheway)
+    if (is_loading && (rawPrompt.startsWith('/btw ') || rawPrompt.startsWith('/btw'))) {
+      const btwQuestion = rawPrompt.replace(/^\/btw\s*/, '');
+      if (!btwQuestion) return;
+
+      const lastMsg = historyStore.messages[historyStore.messages.length - 1];
+      if (lastMsg && lastMsg.role === 'assistant') {
+        historyStore.addStep(lastMsg.id, {
+          id: Math.random().toString(),
+          type: 'text',
+          content: `💬 **[Pergunta /btw]**: ${btwQuestion}`,
+          timestamp: new Date()
+        });
+      }
+
+      input_value = '';
+      chrome.runtime.sendMessage({
+        type: 'AGENT_BTW',
+        sessionId,
+        prompt: btwQuestion
+      });
+      scroll_to_bottom(true);
+      return;
+    }
+
+    if (is_loading) return;
+
     const userMessageId = Math.random().toString();
     historyStore.addMessage({
       id: userMessageId,
@@ -459,6 +521,17 @@
               {/if}
             {/if}
           {/each}
+
+          {#if msg.role === 'assistant' && !is_loading && index === historyStore.messages.length - 1}
+            {@const lastUserMsg = historyStore.messages.slice(0, index).reverse().find(m => m.role === 'user')}
+            {@const toolsUsed = Array.from(new Set(msg.steps.filter(s => s.type === 'tool_use').map(s => (s as any).tool_name || ''))).filter(Boolean)}
+            {@const stepsText = msg.steps.map(s => s.content).join('\n')}
+            <SaveLearningCard
+              userTask={lastUserMsg ? lastUserMsg.content : ''}
+              stepsSummary={stepsText.slice(0, 300)}
+              {toolsUsed}
+            />
+          {/if}
         </ChatBubble>
       {/each}
     {/if}
@@ -542,11 +615,24 @@
           {/if}
         </div>
         <input type="file" multiple class="hidden" bind:this={file_input} onchange={handle_file_upload} />
-        <textarea bind:value={input_value} onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handle_send(); } }} disabled={is_loading} placeholder={is_loading ? "Agente está trabalhando..." : "Peça algo ao agente..."} class="flex-1 bg-transparent border-none focus:outline-none text-sm min-h-[40px] max-h-[150px] py-2 px-2 resize-none leading-relaxed disabled:opacity-50" rows="1"></textarea>
+        <textarea
+          bind:value={input_value}
+          onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handle_send(); } }}
+          placeholder={is_loading ? "Use /btw <pergunta> sem interromper a tarefa..." : "Peça algo ao agente..."}
+          class="flex-1 bg-transparent border-none focus:outline-none text-sm min-h-[40px] max-h-[150px] py-2 px-2 resize-none leading-relaxed"
+          rows="1"
+        ></textarea>
         {#if is_loading}
-          <button onclick={handle_stop} class="bg-[var(--color-status-error)] hover:opacity-90 text-white w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] transition-all shadow-md active:scale-90 shrink-0" title="Parar Agente">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            {#if input_value.trim()}
+              <button onclick={handle_send} class="bg-amber-600 hover:bg-amber-700 text-white w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] transition-all shadow-md active:scale-90" title="Enviar /btw (segundo plano)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+            {/if}
+            <button onclick={handle_stop} class="bg-[var(--color-status-error)] hover:opacity-90 text-white w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] transition-all shadow-md active:scale-90" title="Interromper agente">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
+            </button>
+          </div>
         {:else}
           <button onclick={handle_send} disabled={(!input_value.trim() && attachments.length === 0) || !settingsStore.isConfigured} class="bg-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] disabled:bg-[var(--color-border)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed text-white w-9 h-9 flex items-center justify-center rounded-[var(--radius-lg)] transition-all shadow-md active:scale-90 shrink-0" title="Enviar (Enter)">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
