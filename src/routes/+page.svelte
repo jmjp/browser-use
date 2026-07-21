@@ -36,6 +36,7 @@
   let input_value = $state('');
   let is_loading = $state(false);
   let is_sidebar_open = $state(false);
+  let current_view = $state<'chat' | 'auto-apply'>('chat');
   let sessionId = $derived(historyStore.currentSessionId || 'default-session');
   let attachments = $state<Attachment[]>([]);
   let file_input: HTMLInputElement;
@@ -649,6 +650,12 @@
     </div>
   </footer>
 </div>
+
+<a href="/auto-apply"
+   class="fixed bottom-20 right-4 z-50 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+   Auto-Apply
+</a>
 
 <style>
   main::-webkit-scrollbar { width: 5px; }
